@@ -476,4 +476,108 @@ export default function KiwiMateApp() {
                       rows="4"
                       value={quoteMessage}
                       onChange={(e) => setQuoteMessage(e.target.value)}
-                      placeholder
+                      placeholder="예: 안녕하세요! 요청하신 내용을 보고 연락드립니다. 해당 시간에 방문하여 깔끔하게 작업해 드리겠습니다."
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <button 
+                      onClick={handleSendQuoteSubmit}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
+                    >
+                      견적서 최종 발송하기 & 채팅 시작
+                    </button>
+                    <button 
+                      onClick={() => setIsWritingQuote(false)}
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition"
+                    >
+                      ← 상세 내용으로 돌아가기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : inspectingRequest ? (
+              <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold">{inspectingRequest.category}</span>
+                  <span className="text-xs font-bold text-gray-500">요청서 작성자: {inspectingRequest.author}</span>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-base text-gray-900 mb-1">{inspectingRequest.title}</h3>
+                  <p className="text-xs text-blue-600 font-medium">📍 지역: {inspectingRequest.city}</p>
+                </div>
+
+                <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 space-y-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">고객 상세 요구사항</span>
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{inspectingRequest.detail}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-xl">
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">희망 일정</span>
+                    <span className="font-semibold text-gray-800">📅 {inspectingRequest.schedule}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">고객 희망 예산</span>
+                    <span className="font-semibold text-blue-600">{inspectingRequest.budget}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <button 
+                    onClick={() => { 
+                      setQuotePrice(inspectingRequest.budget.replace(/[^0-9]/g, '')); 
+                      setIsWritingQuote(true); 
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
+                  >
+                    이 일감 채택하기 (견적서 작성하기)
+                  </button>
+                  <button 
+                    onClick={() => setInspectingRequest(null)}
+                    className="w-형태 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition"
+                  >
+                    ← 전체 일감 목록으로 돌아가기
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-4">
+                  <h2 className="text-lg font-bold text-gray-900">전국 일감 목록</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">올라온 모든 요청서를 확인하고 원하시는 일감을 선택하세요.</p>
+                </div>
+
+                <div className="space-y-3">
+                  {requests.map((req) => (
+                    <div 
+                      key={req.id} 
+                      onClick={() => setInspectingRequest(req)}
+                      className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:border-blue-400 transition cursor-pointer space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-semibold">{req.category}</span>
+                        <span className="text-xs font-bold text-gray-700">{req.budget}</span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-gray-800 mb-1">{req.title}</h3>
+                        <p className="text-xs text-gray-500 line-clamp-1">{req.detail}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 border-t border-gray-50 text-[11px] text-gray-400">
+                        <span>📍 {req.city} · 📅 {req.schedule}</span>
+                        <span className="text-blue-600 font-semibold hover:underline">상세보기 →</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+}
