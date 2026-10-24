@@ -9,16 +9,16 @@ export default function KiwiMateApp() {
   // 고객 상세 입력 필드들
   const [requestTitle, setRequestTitle] = useState('');
   const [requestDetail, setRequestDetail] = useState(''); 
-  const [requestSuburb, setRequestSuburb] = useState(''); 
+  const [requestSuburb, setRequestSuburb] = useState('Milford'); // 기본 선택 동네
   const [requestBudget, setRequestBudget] = useState(''); 
   const [requestDate, setRequestDate] = useState(''); 
   const [requestTime, setRequestTime] = useState(''); 
   
   // 고수 모드 관련 상태
-  const [inspectingRequest, setInspectingRequest] = useState(null); // 상세보기 중인 일감
-  const [isWritingQuote, setIsWritingQuote] = useState(false); // 견적 작성 화면 여부
-  const [quotePrice, setQuotePrice] = useState(''); // 고수가 적는 제안 금액
-  const [quoteMessage, setQuoteMessage] = useState(''); // 고수가 적는 견적 메시지
+  const [inspectingRequest, setInspectingRequest] = useState(null); 
+  const [isWritingQuote, setIsWritingQuote] = useState(false); 
+  const [quotePrice, setQuotePrice] = useState(''); 
+  const [quoteMessage, setQuoteMessage] = useState(''); 
 
   const [requests, setRequests] = useState([
     {
@@ -61,6 +61,9 @@ export default function KiwiMateApp() {
   ];
 
   const regions = ['전체 (All Auckland)', 'Milford', 'Westgate', 'Albany', 'CBD'];
+  
+  // 오클랜드 주요 서브허브 리스트 (클릭 선택용)
+  const popularSuburbs = ['Milford', 'Takapuna', 'Albany', 'Northcote', 'Westgate', 'Henderson', 'CBD', 'Epsom', 'Howick', 'Manukau'];
 
   const handleCreateRequest = () => {
     if (!requestTitle || !requestDetail) {
@@ -72,8 +75,8 @@ export default function KiwiMateApp() {
 
     const newReq = {
       id: Date.now(),
-      region: activeRegion === '전체 (All Auckland)' ? (requestSuburb || 'Auckland') : activeRegion,
-      suburb: requestSuburb || 'Auckland',
+      region: requestSuburb, // 선택한 동네로 매칭
+      suburb: requestSuburb,
       category: selectedCategory.name,
       title: requestTitle,
       detail: requestDetail,
@@ -103,7 +106,6 @@ export default function KiwiMateApp() {
 
     setQuotes([...quotes, newQuote]);
     
-    // 채팅방 열면서 고수가 보낸 견적 내용과 메시지를 첫 마디로 주입
     const targetReq = inspectingRequest;
     setInspectingRequest(null);
     setIsWritingQuote(false);
@@ -181,7 +183,6 @@ export default function KiwiMateApp() {
         {/* ================= CHAT VIEW ================= */}
         {activeChat ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col h-[75vh]">
-            {/* Chat Header */}
             <div className="p-3 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-sm">{activeChat.title}</h3>
@@ -195,7 +196,6 @@ export default function KiwiMateApp() {
               </button>
             </div>
 
-            {/* Escrow Status Banner */}
             <div className="bg-blue-50 p-3 border-b border-blue-100 text-xs flex items-center justify-between">
               <div>
                 <span className="font-semibold text-blue-700">안전결제(에스크로): </span>
@@ -223,7 +223,6 @@ export default function KiwiMateApp() {
               </div>
             </div>
 
-            {/* Message List */}
             <div className="flex-1 p-4 overflow-y-auto space-y-3">
               {messages.map((m, idx) => (
                 <div key={idx} className={`flex ${m.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
@@ -240,7 +239,6 @@ export default function KiwiMateApp() {
               ))}
             </div>
 
-            {/* Chat Input */}
             <div className="p-3 border-t border-gray-100 flex space-x-2">
               <input 
                 type="text" 
@@ -284,7 +282,6 @@ export default function KiwiMateApp() {
                   ))}
                 </div>
 
-                {/* Recent My Requests */}
                 <div className="mt-6">
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">우리 동네 최근 요청</h3>
                   <div className="space-y-2">
@@ -349,18 +346,25 @@ export default function KiwiMateApp() {
                     />
                   </div>
 
+                  {/* 세부 동네 클릭 선택 UI */}
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">세부 동네 (Suburb)</label>
-                    <input 
-                      type="text" 
-                      value={requestSuburb}
-                      onChange={(e) => setRequestSuburb(e.target.value)}
-                      placeholder="예: Milford, Albany, Takapuna 등"
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                    />
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">세부 동네 선택 (Suburb)</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {popularSuburbs.map((sub) => (
+                        <button
+                          key={sub}
+                          type="button"
+                          onClick={() => setRequestSuburb(sub)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${requestSuburb === sub ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        >
+                          📍 {sub}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-blue-600 mt-1.5 font-medium">선택된 동네: {requestSuburb}</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-1">희망 날짜 (NZ 캘린더)</label>
                       <input 
@@ -418,7 +422,7 @@ export default function KiwiMateApp() {
                 <h3 className="font-bold text-base mb-1">상세 요청서가 등록되었습니다!</h3>
                 <p className="text-xs text-gray-500 mb-6">동네 고수들이 상세 내용을 확인 후 견적을 보냅니다.</p>
                 <button 
-                  onClick={() => { setStep(1); setRequestTitle(''); setRequestDetail(''); setRequestSuburb(''); setRequestBudget(''); setRequestDate(''); setRequestTime(''); }}
+                  onClick={() => { setStep(1); setRequestTitle(''); setRequestDetail(''); setRequestBudget(''); setRequestDate(''); setRequestTime(''); }}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-5 py-2.5 rounded-xl"
                 >
                   메인으로 돌아가기
@@ -430,7 +434,6 @@ export default function KiwiMateApp() {
 
           /* ================= PROVIDER MODE (고수 일찾기) ================= */
           <div>
-            {/* 1단계: 견적 작성 폼 화면 */}
             {isWritingQuote && inspectingRequest ? (
               <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
                 <div>
@@ -479,7 +482,6 @@ export default function KiwiMateApp() {
                 </div>
               </div>
             ) : inspectingRequest ? (
-              /* 2단계: 일감 상세 확인 화면 */
               <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold">{inspectingRequest.category}</span>
@@ -488,10 +490,9 @@ export default function KiwiMateApp() {
 
                 <div>
                   <h3 className="font-bold text-base text-gray-900 mb-1">{inspectingRequest.title}</h3>
-                  <p className="text-xs text-blue-600 font-medium">📍 동네: {inspectingRequest.suburb} (오클랜드 {inspectingRequest.region})</p>
+                  <p className="text-xs text-blue-600 font-medium">📍 동네: {inspectingRequest.suburb}</p>
                 </div>
 
-                {/* 상세 내용 박스 */}
                 <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 space-y-2">
                   <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">고객 상세 요구사항</span>
                   <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{inspectingRequest.detail}</p>
@@ -508,11 +509,10 @@ export default function KiwiMateApp() {
                   </div>
                 </div>
 
-                {/* 선택 버튼 영역 */}
                 <div className="space-y-2 pt-2">
                   <button 
                     onClick={() => { 
-                      setQuotePrice(inspectingRequest.budget.replace(/[^0-9]/g, '')); // 예산 숫자 자동 채우기 편의
+                      setQuotePrice(inspectingRequest.budget.replace(/[^0-9]/g, '')); 
                       setIsWritingQuote(true); 
                     }}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
@@ -528,7 +528,6 @@ export default function KiwiMateApp() {
                 </div>
               </div>
             ) : (
-              /* 3단계: 일반 일감 목록 화면 */
               <div>
                 <div className="mb-4">
                   <h2 className="text-lg font-bold text-gray-900">들어온 요청서 목록</h2>
