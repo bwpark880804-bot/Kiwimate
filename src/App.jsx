@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 
 export default function KiwiMateApp() {
   const [mode, setMode] = useState('customer'); // 'customer' or 'provider'
-  const [activeRegion, setActiveRegion] = useState('전체 (All NZ)');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [step, setStep] = useState(1); // 1: Category, 2: Details, 3: Done
   
   // 고객 상세 입력 필드들
   const [requestTitle, setRequestTitle] = useState('');
   const [requestDetail, setRequestDetail] = useState(''); 
-  const [requestCity, setRequestCity] = useState('Auckland (Auckland)'); // 기본 도시
+  const [requestCity, setRequestCity] = useState('Auckland (Milford)'); // 기본 선택 지역
   const [requestBudget, setRequestBudget] = useState(''); 
   const [requestDate, setRequestDate] = useState(''); 
   const [requestTime, setRequestTime] = useState(''); 
@@ -59,11 +58,8 @@ export default function KiwiMateApp() {
     { id: 'moving', name: '소형 이사 & 가구 운송', icon: '🚚', desc: '중고 가구 픽업, 트레일러 운송, 짐 옮기기' },
     { id: 'tech', name: '전문 기술 & 맞춤 제작', icon: '💻', desc: '3D CAD, 기계 설계, 3D 프린팅, 태양광 점검' }
   ];
-
-  // 뉴질랜드 주요 지역(Region) 필터
-  const regions = ['전체 (All NZ)', 'Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Tauranga', 'Queenstown'];
   
-  // 뉴질랜드 주요 도시 및 서브허브 (클릭 선택용)
+  // 뉴질랜드 주요 도시 및 서브허브 (요청서 작성 시 클릭 선택용)
   const popularCities = [
     'Auckland (Milford)', 'Auckland (Takapuna)', 'Auckland (Albany)', 'Auckland (CBD)', 
     'Wellington (CBD)', 'Wellington (Lower Hutt)', 
@@ -78,8 +74,6 @@ export default function KiwiMateApp() {
     }
 
     const scheduleStr = requestDate ? `${requestDate} ${requestTime ? `(${requestTime})` : ''}` : '협의 가능';
-    
-    // 선택한 도시에서 대략적인 Region 추출 (예: 'Auckland (Milford)' -> 'Auckland')
     const mainRegion = requestCity.split(' ')[0];
 
     const newReq = {
@@ -147,7 +141,7 @@ export default function KiwiMateApp() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 font-sans pb-12">
-      {/* Top Header */}
+      {/* Top Header (지역 선택바 제거 완료) */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -170,19 +164,6 @@ export default function KiwiMateApp() {
               고수 · 일찾기
             </button>
           </div>
-        </div>
-
-        {/* Region Filter Bar (Nationwide) */}
-        <div className="max-w-md mx-auto px-4 pb-3 flex space-x-2 overflow-x-auto no-scrollbar">
-          {regions.map((reg) => (
-            <button
-              key={reg}
-              onClick={() => setActiveRegion(reg)}
-              className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition ${activeRegion === reg ? 'bg-blue-600 text-white font-medium' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            >
-              🇳🇿 {reg}
-            </button>
-          ))}
         </div>
       </header>
 
@@ -273,7 +254,7 @@ export default function KiwiMateApp() {
               <div>
                 <div className="mb-4">
                   <h2 className="text-lg font-bold text-gray-900">어떤 도움이 필요하신가요?</h2>
-                  <p className="text-xs text-gray-500 mt-0.5">뉴질랜드 전국 이웃들에게 요청하고 안전하게 매칭하세요.</p>
+                  <p className="text-xs text-gray-500 mt-0.5">뉴질랜드 이웃들에게 요청하고 안전하게 매칭하세요.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {categories.map((cat) => (
@@ -294,7 +275,7 @@ export default function KiwiMateApp() {
                 <div className="mt-6">
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">전국 최근 요청</h3>
                   <div className="space-y-2">
-                    {requests.filter(r => activeRegion === '전체 (All NZ)' || r.region === activeRegion).map((req) => (
+                    {requests.map((req) => (
                       <div key={req.id} className="bg-white p-3 rounded-xl border border-gray-200 space-y-1.5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-1.5">
@@ -330,7 +311,7 @@ export default function KiwiMateApp() {
                   ← 카테고리 다시 선택
                 </button>
                 <h3 className="font-bold text-base mb-1">{selectedCategory.name} 상세 요청 작성</h3>
-                <p className="text-xs text-gray-500 mb-4">필요하신 내용을 자세히 적어주세요.</p>
+                <p className="text-xs text-gray-500 mb-4">필요하신 내용과 지역을 선택해 주세요.</p>
 
                 <div className="space-y-3">
                   <div>
@@ -355,9 +336,9 @@ export default function KiwiMateApp() {
                     />
                   </div>
 
-                  {/* 뉴질랜드 도시/지역 클릭 선택 UI */}
+                  {/* 요청 시 지역/도시 선택 UI */}
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">지역/도시 선택 (NZ Nationwide)</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">지역/동네 선택 (클릭)</label>
                     <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 bg-gray-50 rounded-xl border border-gray-100">
                       {popularCities.map((c) => (
                         <button
@@ -419,7 +400,7 @@ export default function KiwiMateApp() {
                     onClick={handleCreateRequest}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition mt-2"
                   >
-                    전국 요청서 등록하기
+                    요청서 등록하기
                   </button>
                 </div>
               </div>
@@ -428,5 +409,149 @@ export default function KiwiMateApp() {
             {step === 3 && (
               <div className="bg-white p-8 rounded-2xl border border-gray-200 text-center shadow-sm">
                 <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">✓</div>
-                <h3 className="font-bold text-base mb-1">전국 상세 요청서가 등록되었습니다!</h3>
-                <p className="text-
+                <h3 className="font-bold text-base mb-1">상세 요청서가 등록되었습니다!</h3>
+                <p className="text-xs text-gray-500 mb-6">해당 지역 고수들이 내용을 확인 후 견적을 보냅니다.</p>
+                <button 
+                  onClick={() => { setStep(1); setRequestTitle(''); setRequestDetail(''); setRequestBudget(''); setRequestDate(''); setRequestTime(''); }}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-5 py-2.5 rounded-xl"
+                >
+                  메인으로 돌아가기
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+
+          /* ================= PROVIDER MODE (고수 일찾기) ================= */
+          <div>
+            {isWritingQuote && inspectingRequest ? (
+              <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
+                <div>
+                  <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold">견적서 작성</span>
+                  <h3 className="font-bold text-base text-gray-900 mt-2">{inspectingRequest.title}</h3>
+                  <p className="text-xs text-gray-500">요청자: {inspectingRequest.author} (📍 {inspectingRequest.city})</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">제안할 견적 금액 ($ NZD)</label>
+                    <input 
+                      type="text" 
+                      value={quotePrice}
+                      onChange={(e) => setQuotePrice(e.target.value)}
+                      placeholder="예: 90 (숫자만 입력)"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">고객에게 보낼 견적 메시지</label>
+                    <textarea 
+                      rows="4"
+                      value={quoteMessage}
+                      onChange={(e) => setQuoteMessage(e.target.value)}
+                      placeholder="예: 안녕하세요! 요청하신 내용을 보고 연락드립니다. 해당 시간에 방문하여 깔끔하게 작업해 드리겠습니다."
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <button 
+                      onClick={handleSendQuoteSubmit}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
+                    >
+                      견적서 최종 발송하기 & 채팅 시작
+                    </button>
+                    <button 
+                      onClick={() => setIsWritingQuote(false)}
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition"
+                    >
+                      ← 상세 내용으로 돌아가기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : inspectingRequest ? (
+              <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold">{inspectingRequest.category}</span>
+                  <span className="text-xs font-bold text-gray-500">요청서 작성자: {inspectingRequest.author}</span>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-base text-gray-900 mb-1">{inspectingRequest.title}</h3>
+                  <p className="text-xs text-blue-600 font-medium">📍 지역: {inspectingRequest.city}</p>
+                </div>
+
+                <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 space-y-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">고객 상세 요구사항</span>
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{inspectingRequest.detail}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-xl">
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">희망 일정</span>
+                    <span className="font-semibold text-gray-800">📅 {inspectingRequest.schedule}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">고객 희망 예산</span>
+                    <span className="font-semibold text-blue-600">{inspectingRequest.budget}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <button 
+                    onClick={() => { 
+                      setQuotePrice(inspectingRequest.budget.replace(/[^0-9]/g, '')); 
+                      setIsWritingQuote(true); 
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
+                  >
+                    이 일감 채택하기 (견적서 작성하기)
+                  </button>
+                  <button 
+                    onClick={() => setInspectingRequest(null)}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition"
+                  >
+                    ← 전체 일감 목록으로 돌아가기
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-4">
+                  <h2 className="text-lg font-bold text-gray-900">전국 일감 목록</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">올라온 모든 요청서를 확인하고 원하시는 일감을 선택하세요.</p>
+                </div>
+
+                <div className="space-y-3">
+                  {requests.map((req) => (
+                    <div 
+                      key={req.id} 
+                      onClick={() => setInspectingRequest(req)}
+                      className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:border-blue-400 transition cursor-pointer space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-semibold">{req.category}</span>
+                        <span className="text-xs font-bold text-gray-700">{req.budget}</span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-gray-800 mb-1">{req.title}</h3>
+                        <p className="text-xs text-gray-500 line-clamp-1">{req.detail}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 border-t border-gray-50 text-[11px] text-gray-400">
+                        <span>📍 {req.city} · 📅 {req.schedule}</span>
+                        <span className="text-blue-600 font-semibold hover:underline">상세보기 →</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+}
