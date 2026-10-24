@@ -1,140 +1,144 @@
 import React, { useState } from 'react';
 
 export default function KiwiMateApp() {
-  const [mode, setMode] = useState('customer'); // 'customer' or 'provider'
+  const [tab, setTab] = useState('home'); // 'home': 홈, 'requests': 내 요청서, 'chat': 채팅, 'profile': 마이페이지
+  const [mode, setMode] = useState('customer'); // 'customer': 고객 모드, 'provider': 고수 모드
+  
+  // 카테고리 및 요청서 작성 스텝 (숨고식 위젯 폼)
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [step, setStep] = useState(1); // 1: Category, 2: Details, 3: Done
+  const [requestStep, setRequestStep] = useState(1); // 1: 지역 선택, 2: 상세 내용, 3: 예산/일정, 4: 완료
   
-  // 고객 상세 입력 필드들
-  const [requestTitle, setRequestTitle] = useState('');
-  const [requestDetail, setRequestDetail] = useState(''); 
-  const [selectedRegion, setSelectedRegion] = useState('Auckland'); // 1단계 큰 지역
-  const [selectedSuburb, setSelectedSuburb] = useState('Milford');   // 2단계 세부 동네
-  const [requestBudget, setRequestBudget] = useState(''); 
-  const [requestDate, setRequestDate] = useState(''); 
-  const [requestTime, setRequestTime] = useState(''); 
-  
-  // 고수 모드 관련 상태
-  const [inspectingRequest, setInspectingRequest] = useState(null); 
-  const [isWritingQuote, setIsWritingQuote] = useState(false); 
-  const [quotePrice, setQuotePrice] = useState(''); 
-  const [quoteMessage, setQuoteMessage] = useState(''); 
+  // 요청서 입력 값들
+  const [selectedRegion, setSelectedRegion] = useState('Auckland');
+  const [selectedSuburb, setSelectedSuburb] = useState('Milford');
+  const [reqTitle, setReqTitle] = useState('');
+  const [reqDetail, setReqDetail] = useState('');
+  const [reqBudget, setReqBudget] = useState('');
+  const [reqDate, setReqDate] = useState('');
 
+  // 전체 요청서 데이터 리스트
   const [requests, setRequests] = useState([
     {
       id: 1,
-      region: 'Auckland',
-      city: 'Auckland (Milford)',
-      category: '잔디 깎기 & 정원 관리',
-      title: '뒷마당 잔디 깎기 및 잡초 제거 부탁드립니다.',
+      category: '정원 · 잔디 관리',
+      title: '뒷마당 잔디 깎기 및 잡초 제거 요청',
       detail: '집 뒤편 잔디가 많이 자랐고 울타리 주변 잡초도 같이 정리해 주실 분 찾습니다.',
-      schedule: '2026-10-28 (오전 10:00)',
+      region: 'Auckland',
+      suburb: 'Milford',
       budget: '$80 NZD',
+      date: '2026-10-28',
       author: '김민수',
-      status: '접수됨'
+      quotesCount: 2
     },
     {
       id: 2,
-      region: 'Christchurch',
-      city: 'Christchurch (Riccarton)',
-      category: '핸디맨 & 집수리',
+      category: '핸디맨 · 집수리',
       title: '현관문 방충망 교체 및 문고리 수리',
       detail: '현관 방충망 하단이 찢어졌고 안방 문고리가 헐거워요. 설치만 도와주세요.',
-      schedule: '2026-10-31 (오후 2:00)',
+      region: 'Christchurch',
+      suburb: 'Riccarton',
       budget: '$120 NZD',
+      date: '2026-10-31',
       author: 'Sarah Lee',
-      status: '견적 대기중'
+      quotesCount: 1
     }
   ]);
 
-  const [quotes, setQuotes] = useState([]);
-  const [activeChat, setActiveChat] = useState(null); 
+  // 고수 모드: 상세보기 및 견적 작성 상태
+  const [inspectingReq, setInspectingReq] = useState(null);
+  const [isWritingQuote, setIsWritingQuote] = useState(false);
+  const [myQuotePrice, setMyQuotePrice] = useState('');
+  const [myQuoteMsg, setMyQuoteMsg] = useState('');
+
+  // 받은 견적서함 (고객 모드에서 확인)
+  const [receivedQuotes, setReceivedQuotes] = useState([
+    {
+      quoteId: 1,
+      requestId: 1,
+      requestTitle: '뒷마당 잔디 깎기 및 잡초 제거 요청',
+      providerName: '키위 가든텍 (Pro)',
+      providerRating: '4.9 (후기 42개)',
+      price: '$85 NZD',
+      msg: '안녕하세요! 밀퍼드 지역 전문 가든팀입니다. 깔끔하게 정리해 드리겠습니다.'
+    }
+  ]);
+
+  // 채팅 시스템
+  const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
-  const [escrowStatus, setEscrowStatus] = useState('none'); 
+  const [escrowStatus, setEscrowStatus] = useState('none'); // 'none', 'deposited', 'completed'
 
   const categories = [
-    { id: 'garden', name: '잔디 깎기 & 정원 관리', icon: '🌿', desc: '정기 잔디 깎기, 울타리 정리, 잡초 제거' },
-    { id: 'handyman', name: '핸디맨 & 집수리', icon: '🔧', desc: '방충망, 문고리, 페인트 보수, 가구 조립' },
-    { id: 'moving', name: '소형 이사 & 가구 운송', icon: '🚚', desc: '중고 가구 픽업, 트레일러 운송, 짐 옮기기' },
-    { id: 'tech', name: '전문 기술 & 맞춤 제작', icon: '💻', desc: '3D CAD, 기계 설계, 3D 프린팅, 태양광 점검' }
+    { id: 'garden', name: '정원 · 잔디 관리', icon: '🌿', desc: '잔디깎기, 잡초제거, 울타리정리' },
+    { id: 'handyman', name: '핸디맨 · 집수리', icon: '🔧', desc: '방충망, 문고리, 페인트, 가구조립' },
+    { id: 'moving', name: '소형이사 · 운송', icon: '🚚', desc: '중고가구픽업, 트레일러, 짐운반' },
+    { id: 'tech', name: '전문기술 · 맞춤제작', icon: '💻', desc: '3D CAD, 기계설계, 3D프린팅' }
   ];
-  
-  // 1단계: 큰 지역(Region) 목록
-  const nzRegions = ['Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Tauranga', 'Queenstown'];
 
-  // 2단계: 큰 지역별 세부 동네(Suburb) 데이터 맵
+  const nzRegions = ['Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Tauranga', 'Queenstown'];
   const regionSuburbs = {
-    Auckland: ['Milford', 'Takapuna', 'Albany', 'Northcote', 'CBD', 'Epsom', 'Henderson', 'Howick'],
-    Wellington: ['CBD', 'Lower Hutt', 'Upper Hutt', 'Porirua', 'Wellington Central'],
-    Christchurch: ['Riccarton', 'CBD', 'Papanui', 'Fendalton', 'Sydenham'],
-    Hamilton: ['CBD', 'Hillcrest', 'Chartwell', 'St Andrews'],
-    Tauranga: ['Mount Maunganui', 'CBD', 'Papamoa', 'Greerton'],
-    Queenstown: ['CBD', 'Frankton', 'Arrowtown', 'Kelvin Heights']
+    Auckland: ['Milford', 'Takapuna', 'Albany', 'CBD', 'Epsom', 'Howick'],
+    Wellington: ['CBD', 'Lower Hutt', 'Upper Hutt', 'Porirua'],
+    Christchurch: ['Riccarton', 'CBD', 'Papanui', 'Fendalton'],
+    Hamilton: ['CBD', 'Hillcrest', 'Chartwell'],
+    Tauranga: ['Mount Maunganui', 'CBD', 'Papamoa'],
+    Queenstown: ['CBD', 'Frankton', 'Arrowtown']
   };
 
   const handleCreateRequest = () => {
-    if (!requestTitle || !requestDetail) {
-      alert('제목과 상세 내용을 모두 입력해 주세요.');
+    if (!reqTitle || !reqDetail) {
+      alert('제목과 상세 내용을 입력해 주세요.');
       return;
     }
-
-    const scheduleStr = requestDate ? `${requestDate} ${requestTime ? `(${requestTime})` : ''}` : '협의 가능';
-    const fullLocation = `${selectedRegion} (${selectedSuburb})`;
 
     const newReq = {
       id: Date.now(),
-      region: selectedRegion,
-      city: fullLocation,
       category: selectedCategory.name,
-      title: requestTitle,
-      detail: requestDetail,
-      schedule: scheduleStr,
-      budget: requestBudget ? `${requestBudget} NZD` : '협의 가능',
-      author: mode === 'customer' ? '박병욱 (나)' : '현지 주민',
-      status: '접수됨'
+      title: reqTitle,
+      detail: reqDetail,
+      region: selectedRegion,
+      suburb: selectedSuburb,
+      budget: reqBudget ? `${reqBudget} NZD` : '협의 가능',
+      date: reqDate || '협의 가능',
+      author: '박병욱 (나)',
+      quotesCount: 0
     };
 
     setRequests([newReq, ...requests]);
-    setStep(3);
+    setRequestStep(4); // 완료 화면으로
   };
 
-  const handleSendQuoteSubmit = () => {
-    if (!quotePrice || !quoteMessage) {
-      alert('제안 금액과 견적 메시지를 모두 입력해 주세요.');
+  const submitQuote = () => {
+    if (!myQuotePrice || !myQuoteMsg) {
+      alert('견적 금액과 메시지를 입력해 주세요.');
       return;
     }
 
-    const newQuote = {
-      requestId: inspectingRequest.id,
-      requestTitle: inspectingRequest.title,
-      provider: '박병욱 (Pro)',
-      price: `${quotePrice} NZD`,
-      msg: quoteMessage
+    const newQ = {
+      quoteId: Date.now(),
+      requestId: inspectingReq.id,
+      requestTitle: inspectingReq.title,
+      providerName: '박병욱 (Top Pro)',
+      providerRating: '5.0 (후기 89개)',
+      price: `${myQuotePrice} NZD`,
+      msg: myQuoteMsg
     };
 
-    setQuotes([...quotes, newQuote]);
-    
-    const targetReq = inspectingRequest;
-    setInspectingRequest(null);
+    setReceivedQuotes([newQ, ...receivedQuotes]);
+    setInspectingReq(null);
     setIsWritingQuote(false);
-    setQuotePrice('');
-    setQuoteMessage('');
-
-    alert('견적서가 고객에게 전송되었습니다! 1:1 채팅방으로 이동합니다.');
-    
-    setActiveChat(targetReq);
-    setMessages([
-      { sender: 'system', text: `${targetReq.author}님과의 1:1 채팅방이 열렸습니다.` },
-      { sender: 'me', text: `[견적서 전송] 제안 금액: ${newQuote.price}\n내용: ${newQuote.msg}` }
-    ]);
-    setEscrowStatus('none');
+    setMyQuotePrice('');
+    setMyQuoteMsg('');
+    alert('숨고 스타일 맞춤 견적서가 고객에게 발송되었습니다!');
   };
 
-  const startChat = (req) => {
-    setActiveChat(req);
+  const startChatWithProvider = (q) => {
+    const targetReq = requests.find(r => r.id === q.requestId) || { title: q.requestTitle, suburb: 'Auckland' };
+    setActiveChat({ title: targetReq.title, partner: q.providerName });
     setMessages([
-      { sender: 'system', text: `${req.author}님과의 1:1 채팅방이 열렸습니다. 에스크로 결제를 진행하세요.` }
+      { sender: 'system', text: `${q.providerName} 고수와의 1:1 견적 상담방이 열렸습니다. 에스크로 안전결제를 진행할 수 있습니다.` },
+      { sender: 'partner', text: `[견적서] 제안금액: ${q.price}\n${q.msg}` }
     ]);
     setEscrowStatus('none');
   };
@@ -146,73 +150,69 @@ export default function KiwiMateApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans pb-12">
-      {/* Top Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-100 text-gray-900 font-sans pb-20">
+      
+      {/* Top Header (숨고 스타일 네이비 브랜드 바) */}
+      <header className="bg-slate-900 text-white sticky top-0 z-20 shadow-md">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="text-xl font-bold text-blue-600">KiwiMate</span>
-            <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">New Zealand</span>
+            <span className="text-xl font-black tracking-tight text-amber-400">KiwiMate</span>
+            <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">NZ 숨고 플랫폼</span>
           </div>
 
-          {/* Mode Switcher */}
-          <div className="bg-gray-100 p-1 rounded-full flex space-x-1">
+          {/* 고객 모드 / 고수 모드 전환 스위치 */}
+          <div className="bg-slate-800 p-1 rounded-full flex space-x-1">
             <button 
-              onClick={() => { setMode('customer'); setActiveChat(null); setInspectingRequest(null); setIsWritingQuote(false); }}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition ${mode === 'customer' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
+              onClick={() => { setMode('customer'); setActiveChat(null); setSelectedCategory(null); setTab('home'); }}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition ${mode === 'customer' ? 'bg-amber-400 text-slate-900' : 'text-slate-400'}`}
             >
-              고객 · 맡기기
+              고객
             </button>
             <button 
-              onClick={() => { setMode('provider'); setActiveChat(null); setIsWritingQuote(false); }}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition ${mode === 'provider' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
+              onClick={() => { setMode('provider'); setActiveChat(null); setSelectedCategory(null); setTab('home'); }}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition ${mode === 'provider' ? 'bg-amber-400 text-slate-900' : 'text-slate-400'}`}
             >
-              고수 · 일찾기
+              고수
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-md mx-auto px-4 pt-4">
+      {/* Main Content Area */}
+      <main className="max-w-md mx-auto p-4">
 
-        {/* ================= CHAT VIEW ================= */}
+        {/* ================= 1. 채팅 화면 ================= */}
         {activeChat ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col h-[75vh]">
-            <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col h-[78vh]">
+            <div className="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
               <div>
-                <h3 className="font-bold text-sm">{activeChat.title}</h3>
-                <p className="text-xs text-gray-500">📍 {activeChat.city} · 희망일: {activeChat.schedule}</p>
+                <h3 className="font-bold text-sm text-slate-900">{activeChat.title}</h3>
+                <p className="text-xs text-blue-600 font-medium">상담 파트너: {activeChat.partner}</p>
               </div>
               <button 
                 onClick={() => setActiveChat(null)}
-                className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg font-medium"
+                className="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded-lg font-bold"
               >
                 나가기
               </button>
             </div>
 
-            <div className="bg-blue-50 p-3 border-b border-blue-100 text-xs flex items-center justify-between">
+            {/* 에스크로 안전결제 배너 */}
+            <div className="bg-amber-50 p-3 border-b border-amber-100 text-xs flex items-center justify-between">
               <div>
-                <span className="font-semibold text-blue-700">안전결제(에스크로): </span>
-                <span>{escrowStatus === 'none' && '대금 예치 전'}</span>
-                <span>{escrowStatus === 'deposited' && '예치 완료 (작업 진행중)'}</span>
-                <span>{escrowStatus === 'completed' && '정산 완료 ✓'}</span>
+                <span className="font-bold text-amber-800">에스크로 안전결제: </span>
+                <span>{escrowStatus === 'none' && '대금 예치 대기중'}</span>
+                <span>{escrowStatus === 'deposited' && '안전결제 완료 (작업중)'}</span>
+                <span>{escrowStatus === 'completed' && '거래 완료 ✓'}</span>
               </div>
               <div>
                 {escrowStatus === 'none' && (
-                  <button 
-                    onClick={() => setEscrowStatus('deposited')}
-                    className="bg-blue-600 text-white px-3 py-1 rounded-md font-medium shadow-sm hover:bg-blue-700"
-                  >
-                    안전결제 예치하기
+                  <button onClick={() => setEscrowStatus('deposited')} className="bg-amber-500 text-white px-3 py-1 rounded font-bold shadow hover:bg-amber-600">
+                    안전결제 예치
                   </button>
                 )}
                 {escrowStatus === 'deposited' && (
-                  <button 
-                    onClick={() => setEscrowStatus('completed')}
-                    className="bg-green-600 text-white px-3 py-1 rounded-md font-medium shadow-sm hover:bg-green-700"
-                  >
+                  <button onClick={() => setEscrowStatus('completed')} className="bg-emerald-600 text-white px-3 py-1 rounded font-bold shadow hover:bg-emerald-700">
                     작업 완료 승인
                   </button>
                 )}
@@ -223,11 +223,9 @@ export default function KiwiMateApp() {
               {messages.map((m, idx) => (
                 <div key={idx} className={`flex ${m.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
                   {m.sender === 'system' ? (
-                    <div className="bg-gray-100 text-gray-600 text-xs p-2.5 rounded-xl w-full text-center">
-                      {m.text}
-                    </div>
+                    <div className="bg-gray-100 text-gray-600 text-xs p-2.5 rounded-xl w-full text-center">{m.text}</div>
                   ) : (
-                    <div className={`max-w-[75%] p-3 rounded-2xl text-sm whitespace-pre-line ${m.sender === 'me' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
+                    <div className={`max-w-[78%] p-3 rounded-2xl text-sm whitespace-pre-line ${m.sender === 'me' ? 'bg-slate-900 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
                       {m.text}
                     </div>
                   )}
@@ -235,349 +233,133 @@ export default function KiwiMateApp() {
               ))}
             </div>
 
-            <div className="p-3 border-t border-gray-100 flex space-x-2">
+            <div className="p-3 border-t border-gray-100 flex space-x-2 bg-white rounded-b-2xl">
               <input 
                 type="text" 
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="메시지를 입력하세요..." 
-                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-slate-900"
               />
-              <button 
-                onClick={sendMessage}
-                className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
-              >
+              <button onClick={sendMessage} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold">
                 전송
               </button>
             </div>
           </div>
+
         ) : mode === 'customer' ? (
 
-          /* ================= CUSTOMER MODE ================= */
-          <div>
-            {step === 1 && (
-              <div>
-                <div className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">어떤 도움이 필요하신가요?</h2>
-                  <p className="text-xs text-gray-500 mt-0.5">뉴질랜드 이웃들에게 요청하고 안전하게 매칭하세요.</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {categories.map((cat) => (
-                    <div 
-                      key={cat.id}
-                      onClick={() => { setSelectedCategory(cat); setStep(2); }}
-                      className="bg-white p-4 rounded-2xl border border-gray-200 hover:border-blue-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between"
-                    >
-                      <span className="text-2xl mb-2">{cat.icon}</span>
-                      <div>
-                        <h3 className="font-bold text-sm text-gray-800">{cat.name}</h3>
-                        <p className="text-[11px] text-gray-500 mt-1 leading-snug">{cat.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          /* ================= CUSTOMER MODE (고객) ================= */
+          tab === 'home' ? (
+            <div>
+              {/* 숨고 스타일 메인 배너 */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-5 rounded-2xl shadow-sm mb-5">
+                <span className="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">숨고 스타일 매칭</span>
+                <h2 className="text-xl font-black mt-2">어떤 전문가가 필요하신가요?</h2>
+                <p className="text-xs text-blue-100 mt-1">견적 요청서를 작성하면 뉴질랜드 전국 고수들이 맞춤 견적을 보내드립니다.</p>
+              </div>
 
-                <div className="mt-6">
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">전국 최근 요청</h3>
+              {/* 카테고리 그리드 */}
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">서비스 카테고리</h3>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {categories.map((cat) => (
+                  <div 
+                    key={cat.id}
+                    onClick={() => { setSelectedCategory(cat); setRequestStep(1); }}
+                    className="bg-white p-4 rounded-2xl border border-gray-200 hover:border-blue-600 hover:shadow-md transition cursor-pointer flex flex-col justify-between"
+                  >
+                    <span className="text-3xl mb-2">{cat.icon}</span>
+                    <div>
+                      <h4 className="font-bold text-sm text-gray-900">{cat.name}</h4>
+                      <p className="text-[11px] text-gray-500 mt-1 leading-snug">{cat.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 받은 견적서 요약 카드 (숨고 핵심 기능) */}
+              <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-sm text-gray-900">📬 내가 받은 고수 견적서함</h3>
+                  <span className="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">{receivedQuotes.length}건</span>
+                </div>
+                {receivedQuotes.length === 0 ? (
+                  <p className="text-xs text-gray-400 py-3 text-center">아직 도착한 견적서가 없습니다. 요청서를 등록해 보세요!</p>
+                ) : (
                   <div className="space-y-2">
-                    {requests.map((req) => (
-                      <div key={req.id} className="bg-white p-3 rounded-xl border border-gray-200 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-1.5">
-                            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">📍 {req.city}</span>
-                            <span className="text-[10px] text-blue-600 font-semibold">{req.category}</span>
+                    {receivedQuotes.map((q) => (
+                      <div key={q.quoteId} className="bg-gray-50 p-3 rounded-xl border border-gray-100 flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center space-x-1.5 mb-0.5">
+                            <span className="text-xs font-bold text-blue-600">{q.providerName}</span>
+                            <span className="text-[10px] text-gray-400">⭐ {q.providerRating}</span>
                           </div>
-                          <span className="text-xs font-bold text-gray-700">{req.budget}</span>
+                          <p className="text-xs font-bold text-gray-800">{q.requestTitle}</p>
+                          <p className="text-xs font-bold text-amber-600 mt-0.5">제안 가격: {q.price}</p>
                         </div>
-                        <h4 className="text-sm font-bold text-gray-800">{req.title}</h4>
-                        <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg leading-relaxed">{req.detail}</p>
-                        <div className="flex items-center justify-between pt-1">
-                          <span className="text-[11px] text-gray-400">📅 {req.schedule}</span>
-                          <button 
-                            onClick={() => startChat(req)}
-                            className="bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-xs px-3 py-1 rounded-lg font-semibold transition"
-                          >
-                            채팅하기
-                          </button>
-                        </div>
+                        <button 
+                          onClick={() => startChatWithProvider(q)}
+                          className="bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-xl shadow hover:bg-slate-800"
+                        >
+                          채팅·상담
+                        </button>
                       </div>
                     ))}
                   </div>
-                </div>
+                )}
               </div>
-            )}
+            </div>
 
-            {step === 2 && selectedCategory && (
-              <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
-                <button 
-                  onClick={() => setStep(1)} 
-                  className="text-xs text-gray-400 hover:text-gray-600 mb-3 block"
-                >
-                  ← 카테고리 다시 선택
-                </button>
-                <h3 className="font-bold text-base mb-1">{selectedCategory.name} 상세 요청 작성</h3>
-                <p className="text-xs text-gray-500 mb-4">필요하신 내용과 지역을 순서대로 선택해 주세요.</p>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">요청 제목</label>
-                    <input 
-                      type="text" 
-                      value={requestTitle}
-                      onChange={(e) => setRequestTitle(e.target.value)}
-                      placeholder="예: 뒷마당 잔디 깎기 및 잡초 제거"
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">상세 내용 (자세히 적어주세요)</label>
-                    <textarea 
-                      rows="3"
-                      value={requestDetail}
-                      onChange={(e) => setRequestDetail(e.target.value)}
-                      placeholder="예: 면적은 대략 50평 정도이며, 잔디가 많이 자라있고 집 주변 잡초도 같이 뽑아주시면 감사하겠습니다."
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
-                    />
-                  </div>
-
-                  {/* 계층형 지역 선택 UI (1단계 큰 지역 -> 2단계 세부 동네) */}
-                  <div className="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <label className="block text-xs font-bold text-gray-700">📍 지역 선택 (1단계: 큰 지역)</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {nzRegions.map((reg) => (
-                        <button
-                          key={reg}
-                          type="button"
-                          onClick={() => {
-                            setSelectedRegion(reg);
-                            // 큰 지역이 바뀌면 첫 번째 세부 동네로 자동 기본 설정
-                            setSelectedSuburb(regionSuburbs[reg][0]);
-                          }}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${selectedRegion === reg ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'}`}
-                        >
-                          {reg}
-                        </button>
-                      ))}
+          ) : tab === 'requests' ? (
+            /* 내 요청서 관리 탭 */
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">내 요청서 관리</h2>
+              <p className="text-xs text-gray-500 mb-4">내가 등록한 일감과 고수들의 입찰 현황을 확인하세요.</p>
+              
+              <div className="space-y-3">
+                {requests.map((req) => (
+                  <div key={req.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-bold">{req.category}</span>
+                      <span className="text-xs font-bold text-gray-700">{req.budget}</span>
                     </div>
-
-                    <div className="pt-2">
-                      <label className="block text-xs font-bold text-gray-700 mb-1.5">📍 세부 동네 선택 (2단계: {selectedRegion})</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {regionSuburbs[selectedRegion].map((sub) => (
-                          <button
-                            key={sub}
-                            type="button"
-                            onClick={() => setSelectedSuburb(sub)}
-                            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${selectedSuburb === sub ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'}`}
-                          >
-                            {sub}
-                          </button>
-                        ))}
-                      </div>
+                    <h3 className="font-bold text-sm text-gray-900">{req.title}</h3>
+                    <p className="text-xs text-gray-500 bg-gray-50 p-2.5 rounded-xl">{req.detail}</p>
+                    <div className="flex items-center justify-between pt-1 text-[11px] text-gray-400 border-t border-gray-100">
+                      <span>📍 {req.region} ({req.suburb}) · 📅 {req.date}</span>
+                      <span className="font-bold text-blue-600">입찰 고수: {req.quotesCount}명</span>
                     </div>
-                    <p className="text-[11px] text-blue-600 font-semibold pt-1">최종 선택 지역: {selectedRegion} ({selectedSuburb})</p>
                   </div>
+                ))}
+              </div>
+            </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-1">
+          ) : tab === 'chat' ? (
+            /* 채팅함 탭 */
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">숨고 1:1 상담 채팅</h2>
+              <p className="text-xs text-gray-500 mb-4">고수와 실시간으로 대화하고 안전결제를 진행하세요.</p>
+              
+              <div className="space-y-2">
+                {receivedQuotes.map((q) => (
+                  <div 
+                    key={q.quoteId} 
+                    onClick={() => startChatWithProvider(q)}
+                    className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between cursor-pointer hover:border-blue-500 transition"
+                  >
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">희망 날짜 (NZ 캘린더)</label>
-                      <input 
-                        type="date" 
-                        value={requestDate}
-                        onChange={(e) => setRequestDate(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
-                      />
+                      <h4 className="font-bold text-sm text-gray-900">{q.providerName}</h4>
+                      <p className="text-xs text-gray-500 mt-0.5">{q.requestTitle}</p>
+                      <span className="text-[10px] text-amber-600 font-bold mt-1 inline-block">제안 금액: {q.price}</span>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">희망 시간</label>
-                      <input 
-                        type="time" 
-                        value={requestTime}
-                        onChange={(e) => setRequestTime(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
+                    <button className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl">대화하기</button>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">희망 예산 ($ NZD)</label>
-                    <input 
-                      type="text" 
-                      value={requestBudget}
-                      onChange={(e) => setRequestBudget(e.target.value)}
-                      placeholder="예: 100"
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">현장 사진 첨부 (선택)</label>
-                    <div 
-                      onClick={() => alert('사진 첨부 시뮬레이션: 이미지가 첨부되었습니다!')}
-                      className="border-2 border-dashed border-gray-200 rounded-xl p-3 text-center text-xs text-gray-400 cursor-pointer hover:border-blue-500 transition"
-                    >
-                      📷 터치해서 현장 사진 업로드하기
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={handleCreateRequest}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition mt-2"
-                  >
-                    요청서 등록하기
-                  </button>
-                </div>
+                ))}
               </div>
-            )}
+            </div>
 
-            {step === 3 && (
-              <div className="bg-white p-8 rounded-2xl border border-gray-200 text-center shadow-sm">
-                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">✓</div>
-                <h3 className="font-bold text-base mb-1">상세 요청서가 등록되었습니다!</h3>
-                <p className="text-xs text-gray-500 mb-6">해당 지역 고수들이 내용을 확인 후 견적을 보냅니다.</p>
-                <button 
-                  onClick={() => { setStep(1); setRequestTitle(''); setRequestDetail(''); setRequestBudget(''); setRequestDate(''); setRequestTime(''); }}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-5 py-2.5 rounded-xl"
-                >
-                  메인으로 돌아가기
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-
-          /* ================= PROVIDER MODE (고수 일찾기) ================= */
-          <div>
-            {isWritingQuote && inspectingRequest ? (
-              <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
-                <div>
-                  <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold">견적서 작성</span>
-                  <h3 className="font-bold text-base text-gray-900 mt-2">{inspectingRequest.title}</h3>
-                  <p className="text-xs text-gray-500">요청자: {inspectingRequest.author} (📍 {inspectingRequest.city})</p>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">제안할 견적 금액 ($ NZD)</label>
-                    <input 
-                      type="text" 
-                      value={quotePrice}
-                      onChange={(e) => setQuotePrice(e.target.value)}
-                      placeholder="예: 90 (숫자만 입력)"
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">고객에게 보낼 견적 메시지</label>
-                    <textarea 
-                      rows="4"
-                      value={quoteMessage}
-                      onChange={(e) => setQuoteMessage(e.target.value)}
-                      placeholder="예: 안녕하세요! 요청하신 내용을 보고 연락드립니다. 해당 시간에 방문하여 깔끔하게 작업해 드리겠습니다."
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
-                    />
-                  </div>
-
-                  <div className="space-y-2 pt-2">
-                    <button 
-                      onClick={handleSendQuoteSubmit}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
-                    >
-                      견적서 최종 발송하기 & 채팅 시작
-                    </button>
-                    <button 
-                      onClick={() => setIsWritingQuote(false)}
-                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition"
-                    >
-                      ← 상세 내용으로 돌아가기
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : inspectingRequest ? (
-              <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold">{inspectingRequest.category}</span>
-                  <span className="text-xs font-bold text-gray-500">요청서 작성자: {inspectingRequest.author}</span>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-base text-gray-900 mb-1">{inspectingRequest.title}</h3>
-                  <p className="text-xs text-blue-600 font-medium">📍 지역: {inspectingRequest.city}</p>
-                </div>
-
-                <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 space-y-2">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">고객 상세 요구사항</span>
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{inspectingRequest.detail}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-xl">
-                  <div>
-                    <span className="text-gray-400 block mb-0.5">희망 일정</span>
-                    <span className="font-semibold text-gray-800">📅 {inspectingRequest.schedule}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5">고객 희망 예산</span>
-                    <span className="font-semibold text-blue-600">{inspectingRequest.budget}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  <button 
-                    onClick={() => { 
-                      setQuotePrice(inspectingRequest.budget.replace(/[^0-9]/g, '')); 
-                      setIsWritingQuote(true); 
-                    }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
-                  >
-                    이 일감 채택하기 (견적서 작성하기)
-                  </button>
-                  <button 
-                    onClick={() => setInspectingRequest(null)}
-                    className="w-형태 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition"
-                  >
-                    ← 전체 일감 목록으로 돌아가기
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">전국 일감 목록</h2>
-                  <p className="text-xs text-gray-500 mt-0.5">올라온 모든 요청서를 확인하고 원하시는 일감을 선택하세요.</p>
-                </div>
-
-                <div className="space-y-3">
-                  {requests.map((req) => (
-                    <div 
-                      key={req.id} 
-                      onClick={() => setInspectingRequest(req)}
-                      className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:border-blue-400 transition cursor-pointer space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-semibold">{req.category}</span>
-                        <span className="text-xs font-bold text-gray-700">{req.budget}</span>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sm text-gray-800 mb-1">{req.title}</h3>
-                        <p className="text-xs text-gray-500 line-clamp-1">{req.detail}</p>
-                      </div>
-                      <div className="flex items-center justify-between pt-1 border-t border-gray-50 text-[11px] text-gray-400">
-                        <span>📍 {req.city} · 📅 {req.schedule}</span>
-                        <span className="text-blue-600 font-semibold hover:underline">상세보기 →</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-      </main>
-    </div>
-  );
-}
+          ) : (
+            /* 마이페이지 탭 */
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm text-center space-y-4">
+              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto
