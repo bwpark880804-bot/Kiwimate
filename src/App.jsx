@@ -14,8 +14,11 @@ export default function KiwiMateApp() {
   const [requestDate, setRequestDate] = useState(''); 
   const [requestTime, setRequestTime] = useState(''); 
   
-  // 고수가 선택한 상세 보기 중인 요청 (Provider Mode 전용)
-  const [inspectingRequest, setInspectingRequest] = useState(null);
+  // 고수 모드 관련 상태
+  const [inspectingRequest, setInspectingRequest] = useState(null); // 상세보기 중인 일감
+  const [isWritingQuote, setIsWritingQuote] = useState(false); // 견적 작성 화면 여부
+  const [quotePrice, setQuotePrice] = useState(''); // 고수가 적는 제안 금액
+  const [quoteMessage, setQuoteMessage] = useState(''); // 고수가 적는 견적 메시지
 
   const [requests, setRequests] = useState([
     {
@@ -46,7 +49,7 @@ export default function KiwiMateApp() {
 
   const [quotes, setQuotes] = useState([]);
   const [activeChat, setActiveChat] = useState(null); 
-  const [messages, setMessages] = useState('');
+  const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [escrowStatus, setEscrowStatus] = useState('none'); 
 
@@ -84,24 +87,43 @@ export default function KiwiMateApp() {
     setStep(3);
   };
 
-  const sendQuoteAndChat = (req) => {
+  const handleSendQuoteSubmit = () => {
+    if (!quotePrice || !quoteMessage) {
+      alert('제안 금액과 견적 메시지를 모두 입력해 주세요.');
+      return;
+    }
+
     const newQuote = {
-      requestId: req.id,
-      requestTitle: req.title,
+      requestId: inspectingRequest.id,
+      requestTitle: inspectingRequest.title,
       provider: '박병욱 (Pro)',
-      price: req.budget,
-      msg: '안녕하세요! 요청하신 내용을 자세히 읽고 지원합니다. 1:1 채팅으로 조율해 봐요!'
+      price: `${quotePrice} NZD`,
+      msg: quoteMessage
     };
+
     setQuotes([...quotes, newQuote]);
-    setInspectingRequest(null); // 상세 보기 닫기
-    alert('견적서가 전송되었습니다! 1:1 채팅방으로 이동합니다.');
-    startChat(req);
+    
+    // 채팅방 열면서 고수가 보낸 견적 내용과 메시지를 첫 마디로 주입
+    const targetReq = inspectingRequest;
+    setInspectingRequest(null);
+    setIsWritingQuote(false);
+    setQuotePrice('');
+    setQuoteMessage('');
+
+    alert('견적서가 고객에게 전송되었습니다! 1:1 채팅방으로 이동합니다.');
+    
+    setActiveChat(targetReq);
+    setMessages([
+      { sender: 'system', text: `${targetReq.author}님과의 1:1 채팅방이 열렸습니다.` },
+      { sender: 'me', text: `[견적서 전송] 제안 금액: ${newQuote.price}\n내용: ${newQuote.msg}` }
+    ]);
+    setEscrowStatus('none');
   };
 
   const startChat = (req) => {
     setActiveChat(req);
     setMessages([
-      { sender: 'system', text: `${req.author}님과의 1:1 채팅방이 열렸습니다. 상세 조건과 일정을 조율하고 에스크로 결제를 진행하세요.` }
+      { sender: 'system', text: `${req.author}님과의 1:1 채팅방이 열렸습니다. 에스크로 결제를 진행하세요.` }
     ]);
     setEscrowStatus('none');
   };
@@ -125,13 +147,13 @@ export default function KiwiMateApp() {
           {/* Mode Switcher */}
           <div className="bg-gray-100 p-1 rounded-full flex space-x-1">
             <button 
-              onClick={() => { setMode('customer'); setActiveChat(null); setInspectingRequest(null); }}
+              onClick={() => { setMode('customer'); setActiveChat(null); setInspectingRequest(null); setIsWritingQuote(false); }}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition ${mode === 'customer' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
             >
               고객 · 맡기기
             </button>
             <button 
-              onClick={() => { setMode('provider'); setActiveChat(null); }}
+              onClick={() => { setMode('provider'); setActiveChat(null); setIsWritingQuote(false); }}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition ${mode === 'provider' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
             >
               고수 · 일찾기
@@ -210,7 +232,7 @@ export default function KiwiMateApp() {
                       {m.text}
                     </div>
                   ) : (
-                    <div className={`max-w-[75%] p-3 rounded-2xl text-sm ${m.sender === 'me' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
+                    <div className={`max-w-[75%] p-3 rounded-2xl text-sm whitespace-pre-line ${m.sender === 'me' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'}`}>
                       {m.text}
                     </div>
                   )}
@@ -394,7 +416,7 @@ export default function KiwiMateApp() {
               <div className="bg-white p-8 rounded-2xl border border-gray-200 text-center shadow-sm">
                 <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">✓</div>
                 <h3 className="font-bold text-base mb-1">상세 요청서가 등록되었습니다!</h3>
-                <p className="text-xs text-gray-500 mb-6">동네 고수들이 상세 내용을 확인 후 1:1 채팅으로 연락을 보냅니다.</p>
+                <p className="text-xs text-gray-500 mb-6">동네 고수들이 상세 내용을 확인 후 견적을 보냅니다.</p>
                 <button 
                   onClick={() => { setStep(1); setRequestTitle(''); setRequestDetail(''); setRequestSuburb(''); setRequestBudget(''); setRequestDate(''); setRequestTime(''); }}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-5 py-2.5 rounded-xl"
@@ -408,8 +430,56 @@ export default function KiwiMateApp() {
 
           /* ================= PROVIDER MODE (고수 일찾기) ================= */
           <div>
-            {/* 만약 고수가 특정 일감을 클릭해서 상세 확인 중일 때 */}
-            {inspectingRequest ? (
+            {/* 1단계: 견적 작성 폼 화면 */}
+            {isWritingQuote && inspectingRequest ? (
+              <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
+                <div>
+                  <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold">견적서 작성</span>
+                  <h3 className="font-bold text-base text-gray-900 mt-2">{inspectingRequest.title}</h3>
+                  <p className="text-xs text-gray-500">요청자: {inspectingRequest.author} (📍 {inspectingRequest.suburb})</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">제안할 견적 금액 ($ NZD)</label>
+                    <input 
+                      type="text" 
+                      value={quotePrice}
+                      onChange={(e) => setQuotePrice(e.target.value)}
+                      placeholder="예: 90 (숫자만 입력)"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">고객에게 보낼 견적 메시지</label>
+                    <textarea 
+                      rows="4"
+                      value={quoteMessage}
+                      onChange={(e) => setQuoteMessage(e.target.value)}
+                      placeholder="예: 안녕하세요! 요청하신 내용을 보고 연락드립니다. 해당 시간에 방문하여 깔끔하게 작업해 드리겠습니다."
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <button 
+                      onClick={handleSendQuoteSubmit}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
+                    >
+                      견적서 최종 발송하기 & 채팅 시작
+                    </button>
+                    <button 
+                      onClick={() => setIsWritingQuote(false)}
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition"
+                    >
+                      ← 상세 내용으로 돌아가기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : inspectingRequest ? (
+              /* 2단계: 일감 상세 확인 화면 */
               <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold">{inspectingRequest.category}</span>
@@ -433,7 +503,7 @@ export default function KiwiMateApp() {
                     <span className="font-semibold text-gray-800">📅 {inspectingRequest.schedule}</span>
                   </div>
                   <div>
-                    <span className="text-gray-400 block mb-0.5">제안 예산</span>
+                    <span className="text-gray-400 block mb-0.5">고객 희망 예산</span>
                     <span className="font-semibold text-blue-600">{inspectingRequest.budget}</span>
                   </div>
                 </div>
@@ -441,10 +511,13 @@ export default function KiwiMateApp() {
                 {/* 선택 버튼 영역 */}
                 <div className="space-y-2 pt-2">
                   <button 
-                    onClick={() => sendQuoteAndChat(inspectingRequest)}
+                    onClick={() => { 
+                      setQuotePrice(inspectingRequest.budget.replace(/[^0-9]/g, '')); // 예산 숫자 자동 채우기 편의
+                      setIsWritingQuote(true); 
+                    }}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
                   >
-                    이 일감 수락하기 (견적 보내기 & 채팅 시작)
+                    이 일감 채택하기 (견적서 작성하기)
                   </button>
                   <button 
                     onClick={() => setInspectingRequest(null)}
@@ -455,7 +528,7 @@ export default function KiwiMateApp() {
                 </div>
               </div>
             ) : (
-              /* 일반 일감 목록 화면 */
+              /* 3단계: 일반 일감 목록 화면 */
               <div>
                 <div className="mb-4">
                   <h2 className="text-lg font-bold text-gray-900">들어온 요청서 목록</h2>
