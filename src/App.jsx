@@ -206,4 +206,161 @@ export default function KiwiMateApp() {
               />
               <button 
                 onClick={sendMessage}
-                className="bg-blue-
+                className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
+              >
+                전송
+              </button>
+            </div>
+          </div>
+        ) : mode === 'customer' ? (
+
+          /* ================= CUSTOMER MODE ================= */
+          <div>
+            {step === 1 && (
+              <div>
+                <div className="mb-4">
+                  <h2 className="text-lg font-bold text-gray-900">어떤 도움이 필요하신가요?</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">오클랜드 이웃들과 전문가들에게 간편하게 요청하세요.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {categories.map((cat) => (
+                    <div 
+                      key={cat.id}
+                      onClick={() => { setSelectedCategory(cat); setStep(2); }}
+                      className="bg-white p-4 rounded-2xl border border-gray-200 hover:border-blue-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between"
+                    >
+                      <span className="text-2xl mb-2">{cat.icon}</span>
+                      <div>
+                        <h3 className="font-bold text-sm text-gray-800">{cat.name}</h3>
+                        <p className="text-[11px] text-gray-500 mt-1 leading-snug">{cat.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recent My Requests */}
+                <div className="mt-6">
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">우리 동네 최근 요청</h3>
+                  <div className="space-y-2">
+                    {requests.filter(r => activeRegion === '전체 (All Auckland)' || r.region === activeRegion).map((req) => (
+                      <div key={req.id} className="bg-white p-3 rounded-xl border border-gray-200 flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center space-x-1.5 mb-1">
+                            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">{req.region}</span>
+                            <span className="text-[10px] text-blue-600 font-semibold">{req.category}</span>
+                          </div>
+                          <h4 className="text-sm font-bold text-gray-800">{req.title}</h4>
+                          <p className="text-xs text-gray-500 mt-0.5">{req.schedule} · 예산: {req.budget}</p>
+                        </div>
+                        <button 
+                          onClick={() => startChat(req)}
+                          className="bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-xs px-3 py-1.5 rounded-lg font-semibold transition"
+                        >
+                          채팅
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 2 && selectedCategory && (
+              <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                <button 
+                  onClick={() => setStep(1)} 
+                  className="text-xs text-gray-400 hover:text-gray-600 mb-3 block"
+                >
+                  ← 카테고리 다시 선택
+                </button>
+                <h3 className="font-bold text-base mb-1">{selectedCategory.name} 요청 작성</h3>
+                <p className="text-xs text-gray-500 mb-4">필요하신 내용을 간단히 적어주세요.</p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">상세 내용</label>
+                    <input 
+                      type="text" 
+                      value={requestTitle}
+                      onChange={(e) => setRequestTitle(e.target.value)}
+                      placeholder="예: 뒷마당 잔디 깎기 및 잡초 제거"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">희망 일정</label>
+                    <input 
+                      type="text" 
+                      value={requestSchedule}
+                      onChange={(e) => setRequestSchedule(e.target.value)}
+                      placeholder="예: 이번 주 주말 / ASAP"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleCreateRequest}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
+                  >
+                    요청서 등록하기
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="bg-white p-8 rounded-2xl border border-gray-200 text-center shadow-sm">
+                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">✓</div>
+                <h3 className="font-bold text-base mb-1">요청서가 등록되었습니다!</h3>
+                <p className="text-xs text-gray-500 mb-6">동네 고수들이 확인 후 견적을 보내드립니다.</p>
+                <button 
+                  onClick={() => { setStep(1); setRequestTitle(''); setRequestSchedule(''); }}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-5 py-2.5 rounded-xl"
+                >
+                  메인으로 돌아가기
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+
+          /* ================= PROVIDER MODE ================= */
+          <div>
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-gray-900">들어온 요청서 목록</h2>
+              <p className="text-xs text-gray-500 mt-0.5">내 동네({activeRegion})의 이웃들이 올린 일감입니다.</p>
+            </div>
+
+            <div className="space-y-3">
+              {requests.filter(r => activeRegion === '전체 (All Auckland)' || r.region === activeRegion).map((req) => (
+                <div key={req.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-semibold">{req.category}</span>
+                    <span className="text-xs font-bold text-gray-700">{req.budget}</span>
+                  </div>
+                  <h3 className="font-bold text-sm text-gray-800 mb-1">{req.title}</h3>
+                  <p className="text-xs text-gray-500 mb-3">📍 {req.region} · 일정: {req.schedule} · 요청자: {req.author}</p>
+                  
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => sendQuote(req)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-xs font-semibold transition"
+                    >
+                      견적 보내기
+                    </button>
+                    <button 
+                      onClick={() => startChat(req)}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-semibold transition"
+                    >
+                      채팅하기
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+}
