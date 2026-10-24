@@ -8,7 +8,8 @@ export default function KiwiMateApp() {
   // 고객 상세 입력 필드들
   const [requestTitle, setRequestTitle] = useState('');
   const [requestDetail, setRequestDetail] = useState(''); 
-  const [requestCity, setRequestCity] = useState('Auckland (Milford)'); // 기본 선택 지역
+  const [selectedRegion, setSelectedRegion] = useState('Auckland'); // 1단계 큰 지역
+  const [selectedSuburb, setSelectedSuburb] = useState('Milford');   // 2단계 세부 동네
   const [requestBudget, setRequestBudget] = useState(''); 
   const [requestDate, setRequestDate] = useState(''); 
   const [requestTime, setRequestTime] = useState(''); 
@@ -59,13 +60,18 @@ export default function KiwiMateApp() {
     { id: 'tech', name: '전문 기술 & 맞춤 제작', icon: '💻', desc: '3D CAD, 기계 설계, 3D 프린팅, 태양광 점검' }
   ];
   
-  // 뉴질랜드 주요 도시 및 서브허브 (요청서 작성 시 클릭 선택용)
-  const popularCities = [
-    'Auckland (Milford)', 'Auckland (Takapuna)', 'Auckland (Albany)', 'Auckland (CBD)', 
-    'Wellington (CBD)', 'Wellington (Lower Hutt)', 
-    'Christchurch (Riccarton)', 'Christchurch (CBD)', 
-    'Hamilton (CBD)', 'Tauranga (Mount Maunganui)', 'Queenstown (CBD)'
-  ];
+  // 1단계: 큰 지역(Region) 목록
+  const nzRegions = ['Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Tauranga', 'Queenstown'];
+
+  // 2단계: 큰 지역별 세부 동네(Suburb) 데이터 맵
+  const regionSuburbs = {
+    Auckland: ['Milford', 'Takapuna', 'Albany', 'Northcote', 'CBD', 'Epsom', 'Henderson', 'Howick'],
+    Wellington: ['CBD', 'Lower Hutt', 'Upper Hutt', 'Porirua', 'Wellington Central'],
+    Christchurch: ['Riccarton', 'CBD', 'Papanui', 'Fendalton', 'Sydenham'],
+    Hamilton: ['CBD', 'Hillcrest', 'Chartwell', 'St Andrews'],
+    Tauranga: ['Mount Maunganui', 'CBD', 'Papamoa', 'Greerton'],
+    Queenstown: ['CBD', 'Frankton', 'Arrowtown', 'Kelvin Heights']
+  };
 
   const handleCreateRequest = () => {
     if (!requestTitle || !requestDetail) {
@@ -74,12 +80,12 @@ export default function KiwiMateApp() {
     }
 
     const scheduleStr = requestDate ? `${requestDate} ${requestTime ? `(${requestTime})` : ''}` : '협의 가능';
-    const mainRegion = requestCity.split(' ')[0];
+    const fullLocation = `${selectedRegion} (${selectedSuburb})`;
 
     const newReq = {
       id: Date.now(),
-      region: mainRegion,
-      city: requestCity,
+      region: selectedRegion,
+      city: fullLocation,
       category: selectedCategory.name,
       title: requestTitle,
       detail: requestDetail,
@@ -141,7 +147,7 @@ export default function KiwiMateApp() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 font-sans pb-12">
-      {/* Top Header (지역 선택바 제거 완료) */}
+      {/* Top Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -311,7 +317,7 @@ export default function KiwiMateApp() {
                   ← 카테고리 다시 선택
                 </button>
                 <h3 className="font-bold text-base mb-1">{selectedCategory.name} 상세 요청 작성</h3>
-                <p className="text-xs text-gray-500 mb-4">필요하신 내용과 지역을 선택해 주세요.</p>
+                <p className="text-xs text-gray-500 mb-4">필요하신 내용과 지역을 순서대로 선택해 주세요.</p>
 
                 <div className="space-y-3">
                   <div>
@@ -336,22 +342,42 @@ export default function KiwiMateApp() {
                     />
                   </div>
 
-                  {/* 요청 시 지역/도시 선택 UI */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">지역/동네 선택 (클릭)</label>
-                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 bg-gray-50 rounded-xl border border-gray-100">
-                      {popularCities.map((c) => (
+                  {/* 계층형 지역 선택 UI (1단계 큰 지역 -> 2단계 세부 동네) */}
+                  <div className="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <label className="block text-xs font-bold text-gray-700">📍 지역 선택 (1단계: 큰 지역)</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {nzRegions.map((reg) => (
                         <button
-                          key={c}
+                          key={reg}
                           type="button"
-                          onClick={() => setRequestCity(c)}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${requestCity === c ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'}`}
+                          onClick={() => {
+                            setSelectedRegion(reg);
+                            // 큰 지역이 바뀌면 첫 번째 세부 동네로 자동 기본 설정
+                            setSelectedSuburb(regionSuburbs[reg][0]);
+                          }}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${selectedRegion === reg ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'}`}
                         >
-                          📍 {c}
+                          {reg}
                         </button>
                       ))}
                     </div>
-                    <p className="text-[11px] text-blue-600 mt-1.5 font-medium">선택된 지역: {requestCity}</p>
+
+                    <div className="pt-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1.5">📍 세부 동네 선택 (2단계: {selectedRegion})</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {regionSuburbs[selectedRegion].map((sub) => (
+                          <button
+                            key={sub}
+                            type="button"
+                            onClick={() => setSelectedSuburb(sub)}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${selectedSuburb === sub ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'}`}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-blue-600 font-semibold pt-1">최종 선택 지역: {selectedRegion} ({selectedSuburb})</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
@@ -450,108 +476,4 @@ export default function KiwiMateApp() {
                       rows="4"
                       value={quoteMessage}
                       onChange={(e) => setQuoteMessage(e.target.value)}
-                      placeholder="예: 안녕하세요! 요청하신 내용을 보고 연락드립니다. 해당 시간에 방문하여 깔끔하게 작업해 드리겠습니다."
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
-                    />
-                  </div>
-
-                  <div className="space-y-2 pt-2">
-                    <button 
-                      onClick={handleSendQuoteSubmit}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
-                    >
-                      견적서 최종 발송하기 & 채팅 시작
-                    </button>
-                    <button 
-                      onClick={() => setIsWritingQuote(false)}
-                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition"
-                    >
-                      ← 상세 내용으로 돌아가기
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : inspectingRequest ? (
-              <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-semibold">{inspectingRequest.category}</span>
-                  <span className="text-xs font-bold text-gray-500">요청서 작성자: {inspectingRequest.author}</span>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-base text-gray-900 mb-1">{inspectingRequest.title}</h3>
-                  <p className="text-xs text-blue-600 font-medium">📍 지역: {inspectingRequest.city}</p>
-                </div>
-
-                <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 space-y-2">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">고객 상세 요구사항</span>
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{inspectingRequest.detail}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-xl">
-                  <div>
-                    <span className="text-gray-400 block mb-0.5">희망 일정</span>
-                    <span className="font-semibold text-gray-800">📅 {inspectingRequest.schedule}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5">고객 희망 예산</span>
-                    <span className="font-semibold text-blue-600">{inspectingRequest.budget}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  <button 
-                    onClick={() => { 
-                      setQuotePrice(inspectingRequest.budget.replace(/[^0-9]/g, '')); 
-                      setIsWritingQuote(true); 
-                    }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-sm transition"
-                  >
-                    이 일감 채택하기 (견적서 작성하기)
-                  </button>
-                  <button 
-                    onClick={() => setInspectingRequest(null)}
-                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition"
-                  >
-                    ← 전체 일감 목록으로 돌아가기
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">전국 일감 목록</h2>
-                  <p className="text-xs text-gray-500 mt-0.5">올라온 모든 요청서를 확인하고 원하시는 일감을 선택하세요.</p>
-                </div>
-
-                <div className="space-y-3">
-                  {requests.map((req) => (
-                    <div 
-                      key={req.id} 
-                      onClick={() => setInspectingRequest(req)}
-                      className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:border-blue-400 transition cursor-pointer space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-semibold">{req.category}</span>
-                        <span className="text-xs font-bold text-gray-700">{req.budget}</span>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sm text-gray-800 mb-1">{req.title}</h3>
-                        <p className="text-xs text-gray-500 line-clamp-1">{req.detail}</p>
-                      </div>
-                      <div className="flex items-center justify-between pt-1 border-t border-gray-50 text-[11px] text-gray-400">
-                        <span>📍 {req.city} · 📅 {req.schedule}</span>
-                        <span className="text-blue-600 font-semibold hover:underline">상세보기 →</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-      </main>
-    </div>
-  );
-}
+                      placeholder
